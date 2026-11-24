@@ -6,48 +6,15 @@
     <title>Havik — Driedimensionale tweedekker</title>
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="crash-effects.css" />
+    <link rel="stylesheet" href="mountain-motion.css" />
   </head>
   <body>
     <main class="cockpit">
-      <header class="topbar">
-        <div class="brand"><span class="brand-mark">H</span><span>HAVIK</span></div>
-        <div class="flight-meta"><span>VRAAG <b>WO ⅠⅠ</b></span><span>VELD <b>EHAM</b></span><span>KOERS <b id="flightHeading">000°</b></span></div>
-        <button id="pauseBtn" class="pause" aria-label="Pauzeer"><span id="pauseIcon">Ⅱ</span></button>
-      </header>
-
-      <section class="viewport" id="viewport">
-        <canvas id="world" aria-label="Tweedekker vliegtuigzicht"></canvas>
-        <canvas id="mountainLayer" aria-hidden="true"></canvas>
-        <div class="sun-wind"><span id="cloudRun">WIND 14 KT</span></div>
-        <div class="heading-strip"><span>315</span><span>330</span><span>345</span><b id="headingTicker">000°</b><span>015</span><span>030</span><span>045</span></div>
-
-        <div class="hud">
-          <div class="gauge-bank left"><span>SNELHEID</span><b id="speedHud">0</b><small>KT</small></div>
-          <div class="crosshair"><i></i><b></b><i></i></div>
-          <div class="gauge-bank right"><span>HOOGTE</span><b id="altHud">0</b><small>VOET</small></div>
-        </div>
-
-        <div class="radio-box"><span>RADIO</span><b>118.750</b></div>
-      </section>
-
-      <section class="instrument-panel">
-        <div class="instruments">
-          <div class="instrument"><div>SNELHEID</div><canvas id="speedGauge" width="150" height="150"></canvas><strong id="speedValue">0</strong><small>KNOPEN</small></div>
-          <div class="instrument"><div>HOOGTE</div><canvas id="altGauge" width="150" height="150"></canvas><strong id="altValue">0</strong><small>VOET</small></div>
-          <div class="instrument"><div>STIJGEN/DALEN</div><canvas id="vsGauge" width="150" height="150"></canvas><strong id="vsValue">+0</strong><small>FT/MIN</small></div>
-        </div>
-
-        <div class="controls">
-          <div class="control-row"><label for="throttle">GAS <output id="throttleOut">0%</output></label><input id="throttle" type="range" min="0" max="100" value="0" /></div>
-          <div class="control-row"><label for="pitch">NEUS <output id="pitchOut">0°</output></label><input id="pitch" type="range" min="-12" max="12" value="0" /></div>
-          <div class="control-row"><label for="heading">KOERS <output id="headingOut">0°</output></label><input id="heading" type="range" min="0" max="359" value="0" /></div>
-        </div>
-      </section>
-
+      <header class="topbar"><div class="brand"><span class="brand-mark">H</span><span>HAVIK</span></div><div class="flight-meta"><span>VRAAG <b>WO ⅠⅠ</b></span><span>VELD <b>EHAM</b></span><span>KOERS <b id="flightHeading">000°</b></span></div><button id="pauseBtn" class="pause" aria-label="Pauzeer"><span id="pauseIcon">Ⅱ</span></button></header>
+      <section class="viewport" id="viewport"><canvas id="world" aria-label="Tweedekker vliegtuigzicht"></canvas><canvas id="mountainLayer" aria-hidden="true"></canvas><div class="sun-wind"><span id="cloudRun">WIND 14 KT</span></div><div class="heading-strip"><span>315</span><span>330</span><span>345</span><b id="headingTicker">000°</b><span>015</span><span>030</span><span>045</span></div><div class="hud"><div class="gauge-bank left"><span>SNELHEID</span><b id="speedHud">0</b><small>KT</small></div><div class="crosshair"><i></i><b></b><i></i></div><div class="gauge-bank right"><span>HOOGTE</span><b id="altHud">0</b><small>VOET</small></div></div><div class="radio-box"><span>RADIO</span><b>118.750</b></div></section>
+      <section class="instrument-panel"><div class="instruments"><div class="instrument"><div>SNELHEID</div><canvas id="speedGauge" width="150" height="150"></canvas><strong id="speedValue">0</strong><small>KNOPEN</small></div><div class="instrument"><div>HOOGTE</div><canvas id="altGauge" width="150" height="150"></canvas><strong id="altValue">0</strong><small>VOET</small></div><div class="instrument"><div>STIJGEN/DALEN</div><canvas id="vsGauge" width="150" height="150"></canvas><strong id="vsValue">+0</strong><small>FT/MIN</small></div></div><div class="controls"><div class="control-row"><label for="throttle">GAS <output id="throttleOut">0%</output></label><input id="throttle" type="range" min="0" max="100" value="0" /></div><div class="control-row"><label for="pitch">NEUS <output id="pitchOut">0°</output></label><input id="pitch" type="range" min="-12" max="12" value="0" /></div><div class="control-row"><label for="heading">KOERS <output id="headingOut">0°</output></label><input id="heading" type="range" min="0" max="359" value="0" /></div></div></section>
       <footer><span><i class="status-dot"></i> VLIEGTUIG AKTIEF</span><span id="coordinates">52.30° N&nbsp;&nbsp; 4.76° E</span><span>UTC <b id="utc">14:32:08</b></span></footer>
     </main>
-    <script src="script.js"></script>
-    <script src="crash-effects.js"></script>
-    <script src="mountain-motion.js"></script>
+    <script src="script.js"></script><script src="crash-effects.js"></script><script src="mountain-motion.js"></script>
   </body>
 </html>
