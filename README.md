@@ -1,14 +1,13 @@
 # Skybound Flight Simulator
 
-Een interactieve browser-flightsimulator met cockpit-HUD, instrumenten en vliegbesturing.
+Een werkende browser-flightsimulator met een start op de grond, instruments en vliegen.
 
-## Starten
+## Opstijgen
 
-Open `index.html` in je browser.
+1. Open `index.html` in je browser.
+2. Zet **THROTTLE** op ongeveer 80–100%.
+3. Wacht tot de snelheid boven 55 knopen komt.
+4. Zet **PITCH** op +7° of hoger.
+5. Het vliegtuig stijgt automatisch op zodra de snelheid groot genoeg is.
 
-## Bediening
-
-- **Throttle** — pas motorvermogen aan
-- **Pitch** — stuur de neus omhoog of omlaag
-- **Heading** — verander de koers
-- **Pause** — pauzeer of hervat de simulatie
+Voor terugkeer naar de grond: zet PITCH tussen 0° en -10°, of vlak een dalingshoek in. Zet daarna de throttle lager. Gebruik **Ⅱ** om de simulatie te pauzeren.
