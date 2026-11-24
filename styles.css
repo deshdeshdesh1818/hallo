@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@500;600;700;800&display=swap');
+
+:root { --lime:#baff5a; --cyan:#6fdbe5; --panel:#0b1115; --line:#263138; }
+* { box-sizing:border-box; }
+body { margin:0; background:#050709; color:#edf5f2; font-family:Inter, sans-serif; overflow:hidden; }
+.cockpit { height:100vh; min-height:620px; display:grid; grid-template-rows:68px minmax(260px, 1fr) 230px 34px; background:#080d10; }
+.topbar { display:flex; align-items:center; padding:0 28px; border-bottom:1px solid var(--line); background:#0b1013; }
+.brand { display:flex; align-items:center; gap:10px; font-size:15px; letter-spacing:2px; font-weight:800; width:260px; }
+.brand-mark { display:grid; place-items:center; width:32px; height:32px; border:1px solid #aab5b2; border-radius:50%; font-family:serif; font-size:20px; }
+.flight-meta { margin:auto; display:flex; gap:44px; font-family:'DM Mono', monospace; color:#86939a; font-size:11px; }
+.flight-meta b { color:#edf5f2; margin-left:7px; font-size:13px; }
+.pause { width:42px; height:42px; border:1px solid #344048; background:#11181c; color:#dde7e4; border-radius:3px; font-size:17px; cursor:pointer; }
+
+.viewport { position:relative; overflow:hidden; background:linear-gradient(#76b8cc 0 58%, #d8b77c 58% 61%, #6a7d66 61%); }
+#world { position:absolute; inset:0; width:100%; height:100%; }
+.heading-strip { position:absolute; top:13px; left:50%; width:min(680px,54%); transform:translateX(-50%); height:32px; display:flex; align-items:flex-start; justify-content:space-between; color:#dcebed; font-family:'DM Mono', monospace; font-size:12px; text-shadow:0 1px 3px #1d3e48; }
+.heading-strip b { position:absolute; top:-10px; left:50%; transform:translateX(-50%); color:var(--lime); font-size:15px; }
+.heading-strip:after { content:''; position:absolute; left:50%; top:20px; width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-top:7px solid var(--lime); }
+.hud { position:absolute; inset:42px 0 0; }
+.hud-side { position:absolute; top:34%; width:92px; height:170px; color:#edf6ef; font-family:'DM Mono', monospace; }
+.hud-side.left { left:7%; }
+.hud-side.right { right:7%; }
+.hud-label { display:block; font-size:10px; color:var(--lime); letter-spacing:2px; margin-bottom:8px; }
+.speed-scale,.alt-scale { position:relative; height:120px; border-left:2px solid rgba(196,232,227,.9); border-right:2px solid rgba(196,232,227,.9); }
+.speed-scale span,.speed-scale b,.alt-scale span,.alt-scale b { position:absolute; right:10px; display:block; font-size:11px; }
+.speed-scale span:nth-child(1),.alt-scale span:nth-child(1) { top:0; }.speed-scale b,.alt-scale b { top:44px; right:-2px; background:#183038; color:white; padding:5px 8px; border:1px solid #a2b6b5; font-size:14px; }.speed-scale span:nth-child(3),.alt-scale span:nth-child(3){top:78px}.speed-scale span:nth-child(4),.alt-scale span:nth-child(4){top:108px}
+.alt-scale span,.alt-scale b { right:auto; left:10px; }.alt-scale b { left:-2px; }
+.attitude { position:absolute; left:50%; top:48%; transform:translate(-50%,-50%); width:160px; height:75px; }
+.aircraft-symbol { position:absolute; left:50%; top:50%; width:150px; height:30px; transform:translate(-50%,-50%); border-bottom:3px solid var(--lime); }
+.aircraft-symbol:before { content:''; position:absolute; left:50%; top:12px; width:14px; height:14px; border:3px solid var(--lime); border-left:0; border-bottom:0; transform:translateX(-50%) rotate(-45deg); }.aircraft-symbol i { position:absolute; bottom:-3px; width:55px; height:3px; background:var(--lime); }.aircraft-symbol i:first-child { left:0 }.aircraft-symbol i:last-child { right:0 }
+.ground-readout { position:absolute; bottom:18px; left:26px; font-family:'DM Mono', monospace; color:#dfe9e7; font-size:12px; }.ground-readout span { color:var(--lime); margin-right:7px; }
+.radio-box { position:absolute; right:24px; bottom:18px; display:flex; gap:12px; align-items:center; font-family:'DM Mono', monospace; font-size:11px; }.radio-box span { color:var(--lime); }.radio-box b { background:rgba(7,15,18,.7); border:1px solid #718184; padding:7px 9px; }
+
+.instrument-panel { display:grid; grid-template-columns:55% 45%; border-top:1px solid #2a3438; background:#0b1114; }
+.instruments { display:flex; justify-content:center; align-items:center; gap:28px; border-right:1px solid var(--line); }
+.instrument { position:relative; width:150px; height:174px; text-align:center; }.instrument canvas { width:150px; height:150px; }.instrument-label { position:absolute; z-index:2; top:0; width:100%; color:#9ba8aa; font-size:9px; letter-spacing:1.5px; }.instrument strong { position:absolute; left:50%; bottom:22px; transform:translateX(-50%); font-family:'DM Mono', monospace; font-size:13px; }.instrument small { position:absolute; left:50%; bottom:8px; transform:translateX(-50%); color:#758187; font-size:7px; }
+.controls { display:flex; flex-direction:column; justify-content:center; gap:22px; padding:25px 55px; }.control-row label { display:flex; justify-content:space-between; margin-bottom:8px; color:#99a5a6; font-size:9px; letter-spacing:1.5px; }.control-row output { color:var(--lime); font-family:'DM Mono', monospace; }.control-row input { width:100%; accent-color:var(--lime); }
+input[type="range"] { height:3px; appearance:none; background:#334044; border-radius:0; }input[type="range"]::-webkit-slider-thumb { appearance:none; width:11px; height:18px; border:1px solid #b6c3c0; background:#dde7e4; border-radius:1px; }
+footer { display:flex; align-items:center; justify-content:space-between; padding:0 28px; background:#070a0c; border-top:1px solid var(--line); color:#748187; font-family:'DM Mono', monospace; font-size:9px; letter-spacing:.5px; }footer b { color:#dce4e2 }.status-dot { display:inline-block; width:6px; height:6px; margin-right:7px; border-radius:50%; background:var(--lime); box-shadow:0 0 8px var(--lime); }
+@media (max-width:900px){.flight-meta{display:none}.cockpit{grid-template-rows:68px minmax(280px,1fr) 210px 34px}.instrument-panel{grid-template-columns:52% 48%}.instruments{gap:4px}.instrument{width:120px}.instrument canvas{width:120px}.controls{padding:20px}.hud-side{display:none}}
