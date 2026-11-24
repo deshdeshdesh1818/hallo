@@ -1,0 +1,16 @@
+/* Crash feedback: visual controls and synthesized impact sound, no modal message. */
+.cockpit{position:relative}
+.cockpit.crashed .topbar::after{content:'●  ●  ●';position:absolute;right:78px;top:50%;transform:translateY(-50%);z-index:5;color:#ff3028;font-size:23px;letter-spacing:5px;text-shadow:0 0 7px #ff160d,0 0 18px #f00;animation:warning-lamps .28s steps(2,end) infinite}
+.cockpit.crashed .instrument-panel{box-shadow:inset 0 0 0 2px rgba(255,24,16,.72),inset 0 0 26px rgba(255,0,0,.25);animation:dashboard-alarm .42s steps(2,end) infinite}
+.cockpit.crashed .instrument-panel::after{content:'ENGINE  OIL  ALT';position:absolute;right:20px;top:7px;z-index:6;padding:4px 8px;border:1px solid #fb3b30;background:#2c1110;color:#ff5146;font:700 9px 'Special Elite',serif;letter-spacing:2px;box-shadow:0 0 12px rgba(255,0,0,.7);animation:warning-lamps .28s steps(2,end) infinite}
+#crashPanel.visible{background:transparent!important;pointer-events:none}
+.crash-card{position:absolute;inset:auto 0 12px;max-width:none;margin:0;padding:0;border:0;background:transparent;pointer-events:none}
+.crash-card strong,.crash-card span{display:none}
+.crash-card button{position:absolute;right:18px;bottom:4px;width:38px;height:34px;padding:0;border:1px solid #c5b98b;background:rgba(38,42,33,.88);color:#fff4d3;font-size:20px;pointer-events:auto}
+.viewport.impact-flash::after{content:'';position:absolute;z-index:9;inset:0;background:rgba(255,225,164,.82);pointer-events:none;animation:impact-flash .42s ease-out forwards}
+.cockpit.crashed .viewport{animation:impact-shake .11s linear 8}
+@keyframes warning-lamps{50%{opacity:.18;filter:brightness(.5)}}
+@keyframes dashboard-alarm{50%{box-shadow:inset 0 0 0 2px rgba(255,24,16,.12),inset 0 0 8px rgba(255,0,0,.05)}}
+@keyframes impact-flash{to{opacity:0}}
+@keyframes impact-shake{0%,100%{transform:translate(0,0)}25%{transform:translate(-5px,2px)}50%{transform:translate(4px,-2px)}75%{transform:translate(-3px,1px)}}
+@media(max-width:900px){.cockpit.crashed .topbar::after{right:60px;font-size:19px}.cockpit.crashed .instrument-panel::after{right:8px;font-size:8px}}
