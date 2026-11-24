@@ -3,96 +3,56 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Skybound — Flight Simulator</title>
+    <title>Havik — Driedimensionale tweedekker</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <main class="cockpit">
       <header class="topbar">
-        <div class="brand"><span class="brand-mark">S</span><span>SKYBOUND</span></div>
-        <div class="flight-meta">
-          <span>FLIGHT <b id="flightNo">SB 204</b></span>
-          <span>ORIGIN <b>EHAM</b></span>
-          <span>DEST <b>KLAX</b></span>
-        </div>
-        <button id="pauseBtn" class="pause" aria-label="Pauzeer simulatie"><span id="pauseIcon">Ⅱ</span></button>
+        <div class="brand"><span class="brand-mark">H</span><span>HAVIK</span></div>
+        <div class="flight-meta"><span>VRAAG <b>WO ⅠⅠ</b></span><span>VELD <b>EHAM</b></span><span>KOERS <b id="flightHeading">000°</b></span></div>
+        <button id="pauseBtn" class="pause" aria-label="Pauzeer"><span id="pauseIcon">Ⅱ</span></button>
       </header>
 
       <section class="viewport" id="viewport">
-        <canvas id="world" aria-label="Vliegsimulator zicht"></canvas>
-
-        <div class="heading-strip">
-          <span>315</span><span>330</span><span>345</span><b id="headingTicker">000°</b><span>015</span><span>030</span><span>045</span>
-        </div>
+        <canvas id="world" aria-label="Tweedekker vliegtuigzicht"></canvas>
+        <div class="sun-wind"><span id="cloudRun">WIND 14 KT</span></div>
+        <div class="heading-strip"><span>315</span><span>330</span><span>345</span><b id="headingTicker">000°</b><span>015</span><span>030</span><span>045</span></div>
 
         <div class="hud">
-          <div class="hud-side left">
-            <span class="hud-label">SPD</span>
-            <div class="speed-scale">
-              <span>180</span><b id="speedHud">240</b><span>220</span><span>200</span>
-            </div>
-          </div>
-
-          <div class="attitude">
-            <div class="aircraft-symbol"><i></i><b></b><i></i></div>
-          </div>
-
-          <div class="hud-side right">
-            <span class="hud-label">ALT</span>
-            <div class="alt-scale">
-              <span>110</span><b id="altHud">10,500</b><span>105</span><span>100</span>
-            </div>
-          </div>
+          <div class="gauge-bank left"><span>SNELHEID</span><b id="speedHud">0</b><small>KT</small></div>
+          <div class="crosshair"><i></i><b></b><i></i></div>
+          <div class="gauge-bank right"><span>HOOGTE</span><b id="altHud">0</b><small>VOET</small></div>
         </div>
 
-        <div class="ground-readout"><span>GS</span> <b id="groundSpeed">246</b> KT</div>
-
-        <div class="radio-box">
-          <span>COM 1</span>
-          <b>118.750</b>
+        <div class="biplane" id="biplane" aria-hidden="true">
+          <div class="propeller"><i></i><i></i></div>
+          <div class="upper-wing"></div>
+          <div class="fuselage"><span class="cockpit-seat"></span></div>
+          <div class="lower-wing"></div>
+          <div class="tail"><i></i><b></b></div>
+          <div class="landing-wheel left-wheel"></div>
+          <div class="landing-wheel right-wheel"></div>
         </div>
+
+        <div class="radio-box"><span>RADIO</span><b>118.750</b></div>
       </section>
 
       <section class="instrument-panel">
         <div class="instruments">
-          <div class="instrument">
-            <div class="instrument-label">AIRSPEED</div>
-            <canvas id="speedGauge" width="150" height="150"></canvas>
-            <strong id="speedValue">240</strong><small>KNOTS</small>
-          </div>
-          <div class="instrument">
-            <div class="instrument-label">ALTITUDE</div>
-            <canvas id="altGauge" width="150" height="150"></canvas>
-            <strong id="altValue">10,500</strong><small>FEET</small>
-          </div>
-          <div class="instrument">
-            <div class="instrument-label">VERTICAL SPEED</div>
-            <canvas id="vsGauge" width="150" height="150"></canvas>
-            <strong id="vsValue">+0</strong><small>FT/MIN</small>
-          </div>
+          <div class="instrument"><div>SNELHEID</div><canvas id="speedGauge" width="150" height="150"></canvas><strong id="speedValue">0</strong><small>KNOPEN</small></div>
+          <div class="instrument"><div>HOOGTE</div><canvas id="altGauge" width="150" height="150"></canvas><strong id="altValue">0</strong><small>VOET</small></div>
+          <div class="instrument"><div>STIJGEN/DALEN</div><canvas id="vsGauge" width="150" height="150"></canvas><strong id="vsValue">+0</strong><small>FT/MIN</small></div>
         </div>
 
         <div class="controls">
-          <div class="control-row">
-            <label for="throttle">THROTTLE <output id="throttleOut">72%</output></label>
-            <input id="throttle" type="range" min="0" max="100" value="72" />
-          </div>
-          <div class="control-row">
-            <label for="pitch">PITCH <output id="pitchOut">0°</output></label>
-            <input id="pitch" type="range" min="-10" max="10" value="0" />
-          </div>
-          <div class="control-row">
-            <label for="heading">HEADING <output id="headingOut">0°</output></label>
-            <input id="heading" type="range" min="0" max="359" value="0" />
-          </div>
+          <div class="control-row"><label for="throttle">GAS <output id="throttleOut">0%</output></label><input id="throttle" type="range" min="0" max="100" value="0" /></div>
+          <div class="control-row"><label for="pitch">NEUS <output id="pitchOut">0°</output></label><input id="pitch" type="range" min="-12" max="12" value="0" /></div>
+          <div class="control-row"><label for="heading">KOERS <output id="headingOut">0°</output></label><input id="heading" type="range" min="0" max="359" value="0" /></div>
         </div>
       </section>
 
-      <footer>
-        <span><i class="status-dot"></i> SIMULATION ACTIVE</span>
-        <span id="coordinates">52.30° N&nbsp;&nbsp; 4.76° E</span>
-        <span>UTC <b id="utc">14:32:08</b></span>
-      </footer>
+      <footer><span><i class="status-dot"></i> VLIEGTUIG AKTIEF</span><span id="coordinates">52.30° N&nbsp;&nbsp; 4.76° E</span><span>UTC <b id="utc">14:32:08</b></span></footer>
     </main>
     <script src="script.js"></script>
   </body>
