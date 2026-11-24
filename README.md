@@ -1,8 +1,6 @@
-# Havik — cockpit van een tweedekker
+# Havik — tweedekker simulator
 
-De camera staat nu in de tweedekker: de bovenste vleugel ligt boven in het beeld en de propeller draait door het midden van het scherm.
-
-Het landschap beweegt soepel aan je zicht voorbij, met variërende boomkronen, bossen, velden, bergen en een bruine zandbaan. De loop van het landschap is continu zonder plotselinge sprongen.
+De camera staat nu in de tweedekker. Het landschap beweegt continu met variërende bomen, velden, bergen en een zandbaan.
 
 ## Opstijgen
 
@@ -10,3 +8,7 @@ Het landschap beweegt soepel aan je zicht voorbij, met variërende boomkronen, b
 2. Zet **GAS** op 80–100%.
 3. Wacht tot de snelheid boven 48 knopen komt.
 4. Zet **NEUS** op +6° of hoger.
+
+## Neerstorten
+
+Onder ongeveer 34 knopen is er onvoldoende snelheid om te vliegen. Zet dan GAS laag in de lucht en het vliegtuig begint te dalen. Bij een harde of lange daling raakt het vliegtuig de grond en verschijnt **NEERGESTORT** met een knop om opnieuw te starten.
