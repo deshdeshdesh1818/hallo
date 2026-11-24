@@ -17,6 +17,7 @@
 
       <section class="viewport" id="viewport">
         <canvas id="world" aria-label="Tweedekker vliegtuigzicht"></canvas>
+        <canvas id="mountainLayer" aria-hidden="true"></canvas>
         <div class="sun-wind"><span id="cloudRun">WIND 14 KT</span></div>
         <div class="heading-strip"><span>315</span><span>330</span><span>345</span><b id="headingTicker">000°</b><span>015</span><span>030</span><span>045</span></div>
 
@@ -24,16 +25,6 @@
           <div class="gauge-bank left"><span>SNELHEID</span><b id="speedHud">0</b><small>KT</small></div>
           <div class="crosshair"><i></i><b></b><i></i></div>
           <div class="gauge-bank right"><span>HOOGTE</span><b id="altHud">0</b><small>VOET</small></div>
-        </div>
-
-        <div class="biplane" id="biplane" aria-hidden="true">
-          <div class="propeller"><i></i><i></i></div>
-          <div class="upper-wing"></div>
-          <div class="fuselage"><span class="cockpit-seat"></span></div>
-          <div class="lower-wing"></div>
-          <div class="tail"><i></i><b></b></div>
-          <div class="landing-wheel left-wheel"></div>
-          <div class="landing-wheel right-wheel"></div>
         </div>
 
         <div class="radio-box"><span>RADIO</span><b>118.750</b></div>
@@ -57,5 +48,6 @@
     </main>
     <script src="script.js"></script>
     <script src="crash-effects.js"></script>
+    <script src="mountain-motion.js"></script>
   </body>
 </html>
