@@ -1,5 +1,1 @@
-/* Mountain layer spans the complete view and sits above the terrain canvas. */
-#viewport{position:relative;isolation:isolate}
-#world{position:absolute;inset:0;width:100%;height:100%;z-index:0}
-#mountainLayer{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;display:block}
-.heading-strip,.hud,.sun-wind,.radio-box{z-index:3}
+#mountainLayer{display:none!important}
