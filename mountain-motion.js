@@ -15,37 +15,31 @@
   };
   const headingDifference = degrees => Math.abs(((degrees + 180) % 360) - 180);
 
-  // A separate scenery control lets the player look/steer the landscape without
-  // changing the flight controls. The ridges, forests, and clouds all respond.
   const sceneryControl = document.createElement('label');
   sceneryControl.className = 'scenery-control';
-  sceneryControl.innerHTML = '<span>LANDSCHAP</span><input type="range" min="-100" max="100" value="0" aria-label="Landschap links of rechts verschuiven"><output>0</output>';
+  sceneryControl.innerHTML = '<span>LANDSCHAP</span><input type="range" min="-100" max="100" value="0" aria-label="Landschap verschuiven"><output>0</output>';
   viewport.appendChild(sceneryControl);
   const scenerySlider = sceneryControl.querySelector('input');
   const sceneryOutput = sceneryControl.querySelector('output');
   scenerySlider.addEventListener('input', () => {
     landscapePan = Number(scenerySlider.value) / 100;
-    sceneryOutput.value = scenerySlider.value;
     sceneryOutput.textContent = scenerySlider.value;
   });
 
-  function drawClouds(ctx, width, height, horizon, now) {
+  function drawClouds(ctx, width, height, horizon) {
     cloudDrift += 0.12;
-    const skyHeight = Math.max(50, horizon);
     for (let i = 0; i < 10; i++) {
       const x = ((i * width * 0.19 + cloudDrift + landscapePan * width * 0.55) % (width * 1.35)) - width * 0.15;
-      const y = skyHeight * (0.12 + seed(i + 90) * 0.48);
+      const y = horizon * (0.12 + seed(i + 90) * 0.48);
       const size = width * (0.035 + seed(i + 110) * 0.035);
       const puffCount = 3 + Math.floor(seed(i + 23) * 3);
       ctx.save();
       ctx.globalAlpha = 0.23 + seed(i + 33) * 0.18;
-      ctx.fillStyle = '#f5f2df';
+      ctx.fillStyle = '#f7f4e5';
       for (let puff = 0; puff < puffCount; puff++) {
         const offset = (puff - (puffCount - 1) / 2) * size * 0.42;
         ctx.beginPath();
-        ctx.ellipse(x + offset, y - Math.sin(puff * 1.7) * size * 0.13,
-          size * (0.35 + seed(i * 7 + puff) * 0.16),
-          size * (0.13 + seed(i * 11 + puff) * 0.06), 0, 0, Math.PI * 2);
+        ctx.ellipse(x + offset, y - Math.sin(puff * 1.7) * size * 0.13, size * (0.35 + seed(i * 7 + puff) * 0.16), size * (0.13 + seed(i * 11 + puff) * 0.06), 0, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.restore();
@@ -54,8 +48,6 @@
 
   function drawForestPatches(ctx, width, height, horizon, travel, pan) {
     const colors = ['#263d2b', '#345039', '#405a3c', '#526744', '#62714a'];
-    // Large deterministic patches produce woods, open fields and sparse edges,
-    // instead of the previous evenly-spaced rows of identical trees.
     for (let patch = 0; patch < 24; patch++) {
       const worldRow = patch % 8;
       const worldCol = Math.floor(patch / 8);
@@ -74,12 +66,6 @@
         ctx.beginPath();
         ctx.ellipse(tx, ty, radius, radius * (0.68 + seed(tree + 777) * 0.32), seed(tree + patch) * 2, 0, Math.PI * 2);
         ctx.fill();
-        if (z > 0.45 && seed(tree + patch * 5) > 0.45) {
-          ctx.fillStyle = 'rgba(190,176,112,.25)';
-          ctx.beginPath();
-          ctx.ellipse(tx - radius * 0.25, ty - radius * 0.22, radius * 0.35, radius * 0.2, -0.5, 0, Math.PI * 2);
-          ctx.fill();
-        }
       }
     }
   }
@@ -91,11 +77,9 @@
     const speed = state.speed || 0;
     const altitude = state.altitude || 0;
     const heading = state.heading || 0;
-    const pitch = state.pitch || 0;
     const travel = state.travel || 0;
     const aligned = headingDifference(heading) < 48;
 
-    // Mountains begin farther away and grow with actual forward movement.
     const clearance = Math.max(0, Math.min(1, (altitude - 450) / 4050));
     if (speed > 0 && aligned && clearance < 0.55) {
       approach = Math.min(1.25, approach + speed * 0.000514444 * dt / 3.4);
@@ -103,7 +87,7 @@
       approach = Math.max(0, approach - dt * (0.3 + clearance * 0.8));
     }
 
-    drawClouds(ctx, width, height, horizon, now);
+    drawClouds(ctx, width, height, horizon);
 
     let nearestBase = 0;
     let nearestTop = height;
@@ -113,6 +97,7 @@
       const base = horizon + height * (0.02 + Math.max(0, approach - clearance * 0.7) * (0.12 + depth * 0.19)) + clearance * height * 0.36;
       const shift = landscapePan * width * (0.4 + depth * 0.25) + ((heading + 180) % 360 - 180) / 180 * width * 0.12 * depth;
       const points = [];
+
       for (let i = 0; i <= 36; i++) {
         const x = -width * 0.17 + width * 1.34 * i / 36 + shift;
         const profile = 0.12 + seed(i * 0.43 + layer * 29) * 0.22 + (seed(i * 2.71 + layer * 13) - 0.5) * 0.07;
@@ -160,8 +145,6 @@
     drawForestPatches(ctx, width, height, horizon, travel, landscapePan);
     ctx.globalAlpha = 1;
 
-    // The impact condition follows the rendered ridge: when it fills the view,
-    // there is no remaining sky or foreground visible in the forward direction.
     const mountainFillsView = nearestTop <= height * 0.04 && nearestBase >= height * 0.96;
     if (mountainFillsView && altitude < 450 && aligned && !collisionTriggered) {
       collisionTriggered = true;

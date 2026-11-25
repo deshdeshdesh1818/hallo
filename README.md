@@ -1,1 +1,1 @@
-De bergen groeien nu geleidelijk terwijl je ernaartoe vliegt. Hun botsingspunt is gekoppeld aan wat je ziet: de crash gebeurt pas als de berg bijna het hele uitzicht vult, niet op een vaste afstand. Bij een opgetrokken neus zie je ook een bladerdak vanuit de lucht. Nabije bergen krijgen meer zichtbare rotsvlakken en sneeuwdetails.
+De visualisatie is aangepast: bergen staan verder in de verte, het landschap kan worden verschoven met de nieuwe schuifregelaar, wolken bewegen en bomen verschijnen in natuurlijke bossen en lege stukken.
