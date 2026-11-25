@@ -1,12 +1,18 @@
 #mountainLayer{display:none!important}
 .scenery-control{display:none!important}
-.steering-wheel{--wheel-turn:0deg;position:absolute;z-index:5;right:22px;bottom:22px;display:grid;justify-items:center;gap:4px;color:#f0e9ce;font:9px Inter,sans-serif;letter-spacing:1px;touch-action:none;user-select:none;cursor:grab}
+.steering-wheel{--wheel-turn:0deg;position:relative;z-index:5;display:grid;justify-items:center;align-content:center;gap:4px;width:100px;min-width:88px;color:#ead9c5;font:9px Inter,sans-serif;letter-spacing:1px;touch-action:none;user-select:none;cursor:grab;justify-self:center;align-self:center}
 .steering-wheel:active{cursor:grabbing}
-.wheel-rim{position:relative;width:86px;height:86px;border:7px solid #d5cca2;border-radius:50%;background:rgba(35,42,34,.5);box-shadow:0 2px 8px #172019;transform:rotate(var(--wheel-turn))}
-.wheel-rim:before,.wheel-rim:after{content:"";position:absolute;background:#d5cca2;left:50%;top:50%;transform:translate(-50%,-50%)}
-.wheel-rim:before{width:7px;height:70px}.wheel-rim:after{width:70px;height:7px}
-.wheel-spoke{position:absolute;left:50%;top:50%;z-index:1;width:30px;height:7px;background:#d5cca2;transform-origin:left center}
+.wheel-rim{position:relative;width:82px;height:82px;border:10px solid #5b321e;border-radius:50%;background:radial-gradient(circle at 35% 28%,#9a6540 0,#70452d 48%,#40251a 100%);box-shadow:inset 0 0 0 2px #bd8a5c,inset 0 0 0 5px #4c2b1d,0 3px 7px #12130f;transform:rotate(var(--wheel-turn));}
+.wheel-rim:before,.wheel-rim:after{content:"";position:absolute;background:linear-gradient(90deg,#71472e,#b27c50,#59341f);left:50%;top:50%;transform:translate(-50%,-50%);border-radius:4px}
+.wheel-rim:before{width:7px;height:64px}.wheel-rim:after{width:64px;height:7px}
+.wheel-spoke{position:absolute;left:50%;top:50%;z-index:1;width:28px;height:6px;border-radius:4px;background:#a8754d;transform-origin:left center}
 .spoke-a{transform:rotate(30deg)}.spoke-b{transform:rotate(150deg)}
-.wheel-hub{position:absolute;z-index:2;left:50%;top:50%;width:18px;height:18px;border:3px solid #d5cca2;border-radius:50%;background:#34392f;transform:translate(-50%,-50%)}
+.wheel-hub{position:absolute;z-index:2;left:50%;top:50%;width:18px;height:18px;border:3px solid #c18b5c;border-radius:50%;background:#59341f;transform:translate(-50%,-50%)}
 .steering-wheel:focus-visible{outline:2px solid #dce69c;outline-offset:4px}
-@media(max-width:560px){.steering-wheel{right:10px;bottom:10px}.wheel-rim{width:70px;height:70px}}
+.controls{display:grid!important;grid-template-columns:minmax(0,1fr) 104px;grid-template-rows:1fr 1fr;align-items:center;gap:10px 14px;padding:14px clamp(12px,2vw,28px)!important}
+.controls .control-row:nth-child(1){grid-column:1;grid-row:1}
+.controls .control-row:nth-child(2){grid-column:1;grid-row:2}
+.controls .steering-wheel{grid-column:2;grid-row:1 / 3}
+.instruments,.instrument,.instrument canvas{visibility:visible!important;opacity:1!important}
+.instrument canvas{display:block!important}
+@media(max-width:560px){.controls{grid-template-columns:minmax(0,1fr) 82px;gap:8px;padding:10px!important}.steering-wheel{width:80px;min-width:76px}.wheel-rim{width:68px;height:68px;border-width:8px}.wheel-rim:before{height:52px}.wheel-rim:after{width:52px}}
