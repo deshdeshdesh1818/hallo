@@ -1,339 +1,89 @@
 (() => {
   'use strict';
-  const $ = (id) => document.getElementById(id);
-  const canvas = $('scene');
-  const ctx = canvas.getContext('2d');
+  const $ = id => document.getElementById(id);
+  const canvas = $('scene'), ctx = canvas.getContext('2d');
   const controls = { throttle: $('throttle'), elevator: $('elevator'), aileron: $('aileron'), rudder: $('rudder') };
-  const outputIds = { throttle: 'throttleOut', elevator: 'elevatorOut', aileron: 'aileronOut', rudder: 'rudderOut' };
-  const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
-  const lerp = (a, b, t) => a + (b - a) * t;
-  const radians = (deg) => deg * Math.PI / 180;
-  const state = { speed: 0, altitude: 0, heading: 0, pitch: 0, bank: 0, vertical: 0, travel: 0, fuel: 100, onGround: true, paused: false, crashed: false, view: 'cockpit', wind: 6, windDirection: 270, prop: 0, time: 0, landing: false };
-  let width = 0, height = 0, dpr = 1, lastFrame = performance.now(), audio = null, engineOsc = null, engineGain = null;
-
-  function resize() {
-    const rect = canvas.getBoundingClientRect();
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
-    width = Math.max(1, rect.width); height = Math.max(1, rect.height);
-    canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-  window.addEventListener('resize', resize); resize();
-
-  function polygon(points, color) {
-    ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(points[0][0], points[0][1]);
-    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i][0], points[i][1]);
-    ctx.closePath(); ctx.fill();
-  }
-  function ellipse(x, y, rx, ry, color, rotation = 0) {
-    ctx.fillStyle = color; ctx.beginPath(); ctx.ellipse(x, y, rx, ry, rotation, 0, Math.PI * 2); ctx.fill();
-  }
-  function drawCloud(x, y, size, alpha) {
-    ctx.fillStyle = `rgba(246,244,221,${alpha})`;
-    ctx.beginPath(); ctx.ellipse(x, y, size * 1.25, size * .20, 0, 0, Math.PI * 2);
-    ctx.ellipse(x - size * .35, y - size * .08, size * .48, size * .24, -.1, 0, Math.PI * 2);
-    ctx.ellipse(x + size * .12, y - size * .14, size * .52, size * .31, .05, 0, Math.PI * 2); ctx.fill();
-  }
-  function drawWorld() {
-    const w = width, h = height;
+  const out = { throttle: 'throttleOut', elevator: 'elevatorOut', aileron: 'aileronOut', rudder: 'rudderOut' };
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const rad = d => d * Math.PI / 180;
+  const s = { speed: 0, altitude: 0, heading: 0, pitch: 0, bank: 0, vertical: 0, travel: 0, fuel: 100, onGround: true, paused: false, crashed: false, view: 'cockpit', prop: 0, time: 0, landed: false };
+  let w = 1, h = 1, dpr = 1, last = performance.now(), audio, oscillator, engineGain;
+  function resize() { const r = canvas.getBoundingClientRect(); dpr = Math.min(devicePixelRatio || 1, 2); w = Math.max(1, r.width); h = Math.max(1, r.height); canvas.width = w * dpr; canvas.height = h * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+  addEventListener('resize', resize); resize();
+  function poly(points, color) { ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(...points[0]); points.slice(1).forEach(p => ctx.lineTo(...p)); ctx.closePath(); ctx.fill(); }
+  function oval(x, y, rx, ry, color) { ctx.fillStyle = color; ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); }
+  function draw() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
-    const horizon = h * (.47 + clamp(state.pitch * .0025, -.11, .11) - clamp(state.altitude / 50000, 0, .1));
-    ctx.save(); ctx.translate(w / 2, h / 2); ctx.rotate(-radians(state.bank) * .34); ctx.translate(-w / 2, -h / 2);
-    const sky = ctx.createLinearGradient(0, 0, 0, horizon + h * .12);
-    sky.addColorStop(0, '#78a3b2'); sky.addColorStop(.66, '#bfd0c5'); sky.addColorStop(1, '#e3d8b8');
-    ctx.fillStyle = sky; ctx.fillRect(-w, -h, w * 3, h * 3);
-    ellipse(w * .77, h * .18, 30, 30, 'rgba(255,235,172,.48)');
-    for (let i = 0; i < 9; i++) {
-      let x = ((i * w * .19 - state.travel * .025 + w * 2) % (w * 1.35)) - w * .15;
-      drawCloud(x, h * (.08 + (i % 3) * .07), w * (.035 + (i % 2) * .012), .35);
-    }
-    polygon([[-w * .1, horizon + 16], [w * .1, horizon - 25], [w * .26, horizon + 6], [w * .43, horizon - 38], [w * .59, horizon + 8], [w * .78, horizon - 21], [w * 1.1, horizon + 20], [w * 1.1, h * 2], [-w * .1, h * 2]], '#7d896f');
+    const horizon = h * (.47 + clamp(s.pitch * .0025, -.11, .11) - clamp(s.altitude / 50000, 0, .1));
+    ctx.save(); ctx.translate(w / 2, h / 2); ctx.rotate(-rad(s.bank) * .34); ctx.translate(-w / 2, -h / 2);
+    const sky = ctx.createLinearGradient(0, 0, 0, horizon + h * .12); sky.addColorStop(0, '#78a3b2'); sky.addColorStop(.7, '#c2d0c3'); sky.addColorStop(1, '#e5d7b4'); ctx.fillStyle = sky; ctx.fillRect(-w, -h, w * 3, h * 3);
+    oval(w * .77, h * .18, 30, 30, 'rgba(255,235,172,.48)');
+    for (let i = 0; i < 8; i++) { const x = ((i * w * .2 - s.travel * .025 + w * 2) % (w * 1.35)) - w * .15, y = h * (.12 + i % 3 * .08), r = w * .04; oval(x, y, r, r * .19, 'rgba(246,244,221,.4)'); oval(x - r * .3, y - 5, r * .43, r * .22, 'rgba(246,244,221,.4)'); oval(x + r * .2, y - 7, r * .42, r * .26, 'rgba(246,244,221,.4)'); }
+    poly([[-w * .1, horizon + 16], [w * .1, horizon - 25], [w * .26, horizon + 6], [w * .43, horizon - 38], [w * .59, horizon + 8], [w * .78, horizon - 21], [w * 1.1, horizon + 20], [w * 1.1, h * 2], [-w * .1, h * 2]], '#75836a');
     ctx.fillStyle = '#91a071'; ctx.fillRect(-w, horizon + 22, w * 3, h * 2);
-    // Patchwork fields move toward the aircraft to create a perspective ground flow.
     ctx.save(); ctx.beginPath(); ctx.rect(-w, horizon + 22, w * 3, h * 2); ctx.clip();
-    for (let i = 0; i < 18; i++) {
-      const z = ((i / 18 + state.travel * .0008) % 1 + 1) % 1;
-      const y = horizon + 28 + z * z * h * 1.45;
-      const half = w * (.025 + z * .68);
-      const shift = Math.sin(i * 19.13) * w * .12 + state.heading * w * .0009;
-      polygon([[w / 2 + shift - half, y], [w / 2 + shift + half, y], [w / 2 + shift + half * 1.25, y + h * .17], [w / 2 + shift - half * 1.25, y + h * .17]], i % 2 ? '#82936c' : '#9a9d70');
-      if (i % 3 === 0) {
-        ctx.strokeStyle = 'rgba(226,211,162,.35)'; ctx.lineWidth = Math.max(1, z * 2);
-        ctx.beginPath(); ctx.moveTo(w / 2 + shift - half, y); ctx.lineTo(w / 2 + shift + half, y); ctx.stroke();
-      }
+    for (let i = 0; i < 18; i++) { const z = ((i / 18 + s.travel * .0008) % 1 + 1) % 1, y = horizon + 28 + z * z * h * 1.45, half = w * (.025 + z * .68), x = w / 2 + Math.sin(i * 19) * w * .12 + s.heading * w * .0009; poly([[x - half, y], [x + half, y], [x + half * 1.25, y + h * .17], [x - half * 1.25, y + h * .17]], i % 2 ? '#82936c' : '#9a9d70'); }
+    const dx = Math.sin(rad(s.heading)) * w * .62, top = horizon + h * .035 + Math.min(s.altitude / 9000, .16) * h, bottom = h * 1.35;
+    if (Math.abs(s.heading) < 70 || s.onGround) {
+      poly([[w / 2 + dx - w * .008, top], [w / 2 + dx + w * .008, top], [w / 2 + dx + w * .24, bottom], [w / 2 + dx - w * .24, bottom]], '#555b51');
+      poly([[w / 2 + dx - w * .005, top], [w / 2 + dx + w * .005, top], [w / 2 + dx + w * .19, bottom], [w / 2 + dx - w * .19, bottom]], '#77796c');
+      for (let i = 0; i < 10; i++) { const t = (i / 10 + s.travel * .004) % 1, y = top + (bottom - top) * t * t; ctx.fillStyle = '#e7e1c9'; ctx.fillRect(w / 2 + dx - Math.max(1, t * w * .006), y, Math.max(2, t * w * .012), Math.max(2, t * h * .018)); }
     }
-    // Runway perspective and centerline, straight ahead on the home heading.
-    const runwayDx = Math.sin(radians(state.heading)) * w * .62;
-    const runwayTop = horizon + h * .035 + Math.min(state.altitude / 9000, .16) * h;
-    const runwayBottom = h * 1.35;
-    if (Math.abs(state.heading) < 70 || state.onGround) {
-      const rwTop = w * .008, rwBottom = w * .24;
-      polygon([[w / 2 + runwayDx - rwTop, runwayTop], [w / 2 + runwayDx + rwTop, runwayTop], [w / 2 + runwayDx + rwBottom, runwayBottom], [w / 2 + runwayDx - rwBottom, runwayBottom]], '#555b51');
-      polygon([[w / 2 + runwayDx - rwTop * .62, runwayTop], [w / 2 + runwayDx + rwTop * .62, runwayTop], [w / 2 + runwayDx + rwBottom * .82, runwayBottom], [w / 2 + runwayDx - rwBottom * .82, runwayBottom]], '#77796c');
-      for (let i = 0; i < 10; i++) {
-        const t = ((i / 10 + state.travel * .004) % 1);
-        const y = runwayTop + (runwayBottom - runwayTop) * t * t;
-        const markW = Math.max(1, t * w * .012);
-        ctx.fillStyle = '#e7e1c9'; ctx.fillRect(w / 2 + runwayDx - markW / 2, y, markW, Math.max(2, t * h * .018));
-      }
-      ctx.strokeStyle = '#ece6cf'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(w / 2 + runwayDx - rwTop * 1.8, runwayTop + 3); ctx.lineTo(w / 2 + runwayDx - rwBottom * .9, runwayBottom); ctx.moveTo(w / 2 + runwayDx + rwTop * 1.8, runwayTop + 3); ctx.lineTo(w / 2 + runwayDx + rwBottom * .9, runwayBottom); ctx.stroke();
-    }
-    // Small tree clusters give scale and movement cues.
-    for (let i = 0; i < 44; i++) {
-      const t = ((i / 44 + state.travel * .0014) % 1 + 1) % 1;
-      const side = i % 2 ? -1 : 1;
-      const x = w / 2 + side * w * (.08 + ((i * 37) % 100) / 130) * (.2 + t);
-      const y = horizon + 20 + t * t * h * 1.2;
-      const size = 2 + t * 13;
-      ellipse(x, y, size * .65, size, i % 3 ? '#405d43' : '#526744');
-    }
+    for (let i = 0; i < 38; i++) { const z = ((i / 38 + s.travel * .0014) % 1 + 1) % 1, side = i % 2 ? -1 : 1, x = w / 2 + side * w * (.1 + ((i * 37) % 100) / 130) * (.2 + z), y = horizon + 20 + z * z * h * 1.2; oval(x, y, 2 + z * 8, 2 + z * 12, i % 3 ? '#405d43' : '#526744'); }
     ctx.restore(); ctx.restore();
-    if (state.view === 'cockpit') drawCockpit(w, h);
-    else drawExternalPlane(w, h);
-    if (state.crashed) { ctx.fillStyle = 'rgba(44,23,16,.22)'; ctx.fillRect(0, 0, w, h); }
-  }
-  function drawCockpit(w, h) {
-    // Upper wing, interplane struts, bracing wires and the open-cockpit nose.
-    const roll = clamp(state.bank, -35, 35) * .35;
-    ctx.save(); ctx.translate(w / 2, h * .64); ctx.rotate(radians(roll));
-    polygon([[-w * .52, -h * .20], [-w * .43, -h * .27], [w * .43, -h * .27], [w * .52, -h * .20], [w * .48, -h * .16], [-w * .48, -h * .16]], '#a75631');
-    ctx.fillStyle = '#d39350'; ctx.fillRect(-w * .47, -h * .187, w * .94, 3);
-    ctx.strokeStyle = '#4c3a2a'; ctx.lineWidth = 3;
-    for (const x of [-w * .28, w * .28]) { ctx.beginPath(); ctx.moveTo(x, -h * .19); ctx.lineTo(x * .72, h * .04); ctx.stroke(); }
-    ctx.strokeStyle = 'rgba(238,220,172,.8)'; ctx.lineWidth = 1;
-    for (const x of [-w * .3, w * .3]) { ctx.beginPath(); ctx.moveTo(x, -h * .19); ctx.lineTo(-x * .72, h * .04); ctx.stroke(); }
-    // Cowling, blurred spinning propeller and leather cockpit coaming.
-    const cx = 0, cy = h * .06;
-    ctx.save(); ctx.translate(cx, cy); ctx.rotate(state.prop);
-    ctx.fillStyle = 'rgba(36,34,27,.48)'; ctx.fillRect(-3, -h * .26, 6, h * .52); ctx.fillRect(-w * .12, -3, w * .24, 6); ctx.restore();
-    ellipse(cx, cy, w * .045, h * .045, '#58432d'); ellipse(cx, cy, w * .022, h * .025, '#c38d51');
-    polygon([[-w * .13, h * .06], [w * .13, h * .06], [w * .21, h * .48], [-w * .21, h * .48]], '#4a3928');
-    polygon([[-w * .105, h * .08], [w * .105, h * .08], [w * .16, h * .44], [-w * .16, h * .44]], '#795638');
-    ctx.strokeStyle = '#342a20'; ctx.lineWidth = Math.max(8, w * .025); ctx.beginPath(); ctx.ellipse(0, h * .31, w * .16, h * .13, 0, Math.PI, 0); ctx.stroke();
-    ctx.restore();
-    // Subtle aiming mark.
-    ctx.strokeStyle = 'rgba(255,246,211,.62)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(w / 2 - 20, h * .49); ctx.lineTo(w / 2 - 7, h * .49); ctx.moveTo(w / 2 + 7, h * .49); ctx.lineTo(w / 2 + 20, h * .49); ctx.moveTo(w / 2, h * .49 - 5); ctx.lineTo(w / 2, h * .49 + 5); ctx.stroke();
-  }
-  function drawExternalPlane(w, h) {
-    const x = w * .5, y = h * .59;
-    ctx.save(); ctx.translate(x, y); ctx.rotate(radians(clamp(state.bank, -45, 45) * .55));
-    // Side-on 3D-ish biplane illustration with two wings, wires, tail and spinning prop.
-    ctx.strokeStyle = 'rgba(30,35,29,.28)'; ctx.lineWidth = 12; ctx.beginPath(); ctx.moveTo(-w * .26, h * .07); ctx.lineTo(w * .26, h * .07); ctx.stroke();
-    polygon([[-w * .38, -h * .08], [-w * .27, -h * .13], [w * .36, -h * .13], [w * .4, -h * .08], [w * .34, -h * .045], [-w * .36, -h * .045]], '#ba633a');
-    polygon([[-w * .33, h * .02], [-w * .24, h * -.02], [w * .32, h * -.02], [w * .36, h * .02], [w * .29, h * .055], [-w * .31, h * .055]], '#d18a4d');
-    ctx.strokeStyle = '#503c2a'; ctx.lineWidth = 3;
-    for (const px of [-w * .18, w * .19]) { ctx.beginPath(); ctx.moveTo(px, -h * .08); ctx.lineTo(px * .75, h * .02); ctx.stroke(); }
-    polygon([[-w * .38, -h * .02], [-w * .48, -h * .10], [-w * .45, h * .03], [-w * .39, h * .04]], '#9b5736');
-    ellipse(w * .04, 0, w * .24, h * .035, '#483a29'); ellipse(w * .15, -h * .01, w * .075, h * .065, '#a95832');
-    ctx.save(); ctx.translate(w * .25, 0); ctx.rotate(state.prop); ctx.fillStyle = '#322c24'; ctx.fillRect(-2, -h * .14, 4, h * .28); ctx.restore();
-    ellipse(-w * .20, h * .055, w * .028, h * .028, '#302d25'); ellipse(w * .13, h * .052, w * .028, h * .028, '#302d25');
-    ctx.restore();
-  }
-
-  function drawDial(id, value, max, label) {
-    const c = $(id), g = c.getContext('2d'), cw = c.width, ch = c.height, cx = cw / 2, cy = ch / 2 + 5, r = 48;
-    g.clearRect(0, 0, cw, ch); g.save(); g.translate(cx, cy);
-    g.beginPath(); g.arc(0, 0, r, Math.PI * .78, Math.PI * 2.22); g.strokeStyle = '#66715f'; g.lineWidth = 5; g.stroke();
-    for (let i = 0; i <= 10; i++) {
-      const a = Math.PI * (.78 + 1.44 * i / 10), x1 = Math.cos(a) * (r - 5), y1 = Math.sin(a) * (r - 5);
-      g.beginPath(); g.moveTo(x1, y1); g.lineTo(Math.cos(a) * (r - (i % 2 ? 1 : 10)), Math.sin(a) * (r - (i % 2 ? 1 : 10)));
-      g.strokeStyle = i > 8 && label === 'speed' ? '#d8755b' : '#d5d0b4'; g.lineWidth = i % 2 ? 1 : 2; g.stroke();
-    }
-    const a = Math.PI * (.78 + 1.44 * clamp(value / max, 0, 1));
-    g.beginPath(); g.moveTo(0, 7); g.lineTo(Math.cos(a) * (r - 13), Math.sin(a) * (r - 13)); g.strokeStyle = '#d98c51'; g.lineWidth = 2; g.stroke();
-    g.beginPath(); g.arc(0, 0, 3, 0, Math.PI * 2); g.fillStyle = '#e7dfc3'; g.fill(); g.restore();
-  }
-  function drawAttitude() {
-    const c = $('attitude'), g = c.getContext('2d'), s = c.width;
-    g.clearRect(0, 0, s, s); g.save(); g.beginPath(); g.arc(s / 2, s / 2, s * .47, 0, Math.PI * 2); g.clip();
-    g.translate(s / 2, s / 2); g.rotate(-radians(state.bank)); g.translate(0, clamp(state.pitch, -25, 25) * 1.2);
-    g.fillStyle = '#668b99'; g.fillRect(-s, -s, s * 2, s); g.fillStyle = '#927e59'; g.fillRect(-s, 0, s * 2, s);
-    g.strokeStyle = '#f2ebd1'; g.lineWidth = 2; g.beginPath(); g.moveTo(-s, 0); g.lineTo(s, 0); g.stroke();
-    for (let i = -2; i <= 2; i++) { if (!i) continue; g.beginPath(); g.moveTo(-13, i * 12); g.lineTo(13, i * 12); g.stroke(); }
-    g.restore(); g.strokeStyle = '#d8d1b3'; g.lineWidth = 2; g.beginPath(); g.arc(s / 2, s / 2, s * .47, 0, Math.PI * 2); g.stroke();
-    g.beginPath(); g.moveTo(s * .22, s * .5); g.lineTo(s * .42, s * .5); g.moveTo(s * .58, s * .5); g.lineTo(s * .78, s * .5); g.stroke();
-  }
-
-  const knotsToFpm = (mps) => Math.round(mps * 196.85);
-  function updateReadouts() {
-    const speed = Math.round(state.speed), feet = Math.round(state.altitude * 3.28084), climb = knotsToFpm(state.vertical);
-    $('speedValue').textContent = speed; $('altValue').textContent = feet.toLocaleString('nl-NL');
-    $('hudSpeed').textContent = speed; $('hudAltitude').textContent = feet.toLocaleString('nl-NL'); $('hudClimb').textContent = `${climb > 0 ? '+' : ''}${climb}`;
-    $('headingReadout').textContent = `${String(Math.round(state.heading + 360) % 360).padStart(3, '0')}°`;
-    $('rpmValue').textContent = Math.round(700 + Number(controls.throttle.value) * 20).toLocaleString('nl-NL');
-    $('rpmMeter').style.width = `${controls.throttle.value}%`;
-    $('fuelValue').textContent = Math.round(state.fuel); $('fuelMeter').style.width = `${state.fuel}%`;
-    $('statusText').textContent = state.crashed ? 'VLUCHT BEËINDIGD' : state.onGround ? (state.speed > 5 ? 'TAXI · STARTBAAN' : Number(controls.throttle.value) > 0 ? 'MOTOR DRAAIT · OP DE STARTBAAN' : 'MOTOR UIT · OP DE STARTBAAN') : 'IN VLUCHT · VISUEEL WEER';
-    $('statusDot').style.background = state.crashed ? '#e46d54' : state.onGround ? '#e4a95c' : '#c8d880';
-    $('coordinates').innerHTML = `${(52.30 + state.travel / 800000).toFixed(2)}° N&nbsp; ${(4.76 + Math.sin(radians(state.heading)) * state.travel / 800000).toFixed(2)}° E`;
-    drawDial('speedDial', state.speed, 120, 'speed'); drawDial('altDial', feet, 10000, 'alt'); drawAttitude();
-    if (state.crashed) return;
-    let message = 'IN VLUCHT · HOUD DE NEUS LICHT OMHOOG EN DE VLEUGELS WATERPAS';
-    if (state.onGround) {
-      if (state.speed < 5 && Number(controls.throttle.value) === 0) message = 'KLAAR VOOR START · GEEF GAS EN TREK LICHT AAN DE STICK';
-      else if (state.speed < 40) message = 'STARTBAAN · GEEF MEER GAS OM OP TE STIJGEN';
-      else message = 'ROTATIESNELHEID · TREK LICHT AAN DE STICK OM OP TE STIJGEN';
-    } else if (state.speed < 35) message = 'WAARSCHUWING · TE WEINIG SNELHEID — NEUS OMLAAG';
-    else if (state.altitude < 35 && state.speed > 35) message = 'NADERING · LIJN OP DE BAAN UIT EN MAAK EEN ZACHTE LANDING';
-    $('message').textContent = message;
-  }
-
-  function setCrash(title, text) {
-    if (state.crashed) return;
-    state.crashed = true; state.paused = true;
-    $('crashTitle').textContent = title; $('crashText').textContent = text;
-    $('crashOverlay').hidden = false; $('pausedOverlay').hidden = true; updateReadouts();
-    playImpact();
-  }
-  function reset() {
-    Object.assign(state, { speed: 0, altitude: 0, heading: 0, pitch: 0, bank: 0, vertical: 0, travel: 0, fuel: 100, onGround: true, paused: false, crashed: false, landing: false, prop: 0 });
-    Object.values(controls).forEach((input) => { input.value = input === controls.throttle ? 0 : 0; input.dispatchEvent(new Event('input', { bubbles: true })); });
-    $('crashOverlay').hidden = true; $('pausedOverlay').hidden = true; $('pauseButton').textContent = 'Ⅱ';
-    $('message').textContent = 'KLAAR VOOR START · GEEF GAS EN TREK LICHT AAN DE STICK';
-    lastFrame = performance.now();
-  }
-
-  function simulate(dt) {
-    if (state.paused || state.crashed) return;
-    const throttle = Number(controls.throttle.value) / 100;
-    const elevator = Number(controls.elevator.value) / 100;
-    const aileron = Number(controls.aileron.value) / 100;
-    const rudder = Number(controls.rudder.value) / 100;
-    state.time += dt;
-    const desiredSpeed = throttle * 62;
-    const drag = .00043 * state.speed * state.speed;
-    state.speed = Math.max(0, state.speed + (throttle * 8.3 - drag - state.speed * .025) * dt);
-    state.speed = Math.min(120, state.speed);
-    state.fuel = Math.max(0, state.fuel - throttle * .00125 * dt);
-    if (state.fuel <= 0) { controls.throttle.value = 0; }
-    state.prop += dt * (5 + state.speed * .18);
-    state.travel += state.speed * dt;
-    // Biplane flight controls have inertia: inputs command attitudes, not instant movement.
-    const targetBank = aileron * 48;
-    state.bank += (targetBank - state.bank) * Math.min(1, dt * 1.9);
-    const turnRate = Math.sin(radians(state.bank)) * (state.speed / 38) * 24 + rudder * (state.onGround ? 9 : 5);
-    state.heading = (state.heading + turnRate * dt + 360) % 360;
-    const targetPitch = elevator * 17;
-    state.pitch += (targetPitch - state.pitch) * Math.min(1, dt * 1.6);
-    if (state.onGround) {
-      state.altitude = 0; state.vertical = 0;
-      if (state.speed > 43 && state.pitch > 4) { state.onGround = false; state.vertical = 2; }
-      if (state.speed > 0 && Math.abs(state.heading) > 115) { state.heading = 0; }
+    if (s.view === 'cockpit') {
+      ctx.save(); ctx.translate(w / 2, h * .64); ctx.rotate(rad(clamp(s.bank, -35, 35) * .35));
+      poly([[-w*.52,-h*.20],[-w*.43,-h*.27],[w*.43,-h*.27],[w*.52,-h*.20],[w*.48,-h*.16],[-w*.48,-h*.16]], '#a75631'); ctx.fillStyle = '#d39350'; ctx.fillRect(-w*.47,-h*.187,w*.94,3);
+      ctx.strokeStyle = '#4c3a2a'; ctx.lineWidth = 3; [-w*.28,w*.28].forEach(x=>{ctx.beginPath();ctx.moveTo(x,-h*.19);ctx.lineTo(x*.72,h*.04);ctx.stroke();});
+      ctx.save();ctx.translate(0,h*.06);ctx.rotate(s.prop);ctx.fillStyle='rgba(36,34,27,.45)';ctx.fillRect(-3,-h*.24,6,h*.48);ctx.fillRect(-w*.12,-3,w*.24,6);ctx.restore();
+      oval(0,h*.06,w*.045,h*.045,'#58432d'); poly([[-w*.13,h*.06],[w*.13,h*.06],[w*.21,h*.48],[-w*.21,h*.48]],'#4a3928'); poly([[-w*.105,h*.08],[w*.105,h*.08],[w*.16,h*.44],[-w*.16,h*.44]],'#795638');
+      ctx.strokeStyle='#342a20';ctx.lineWidth=Math.max(8,w*.025);ctx.beginPath();ctx.ellipse(0,h*.31,w*.16,h*.13,0,Math.PI,0);ctx.stroke();ctx.restore();
     } else {
-      const stallSpeed = 34;
-      const liftFactor = clamp((state.speed - stallSpeed) / 24, 0, 1.15);
-      const targetVertical = (state.pitch - 2.2) * .34 * liftFactor - (state.speed < stallSpeed ? (stallSpeed - state.speed) * .65 : 0);
-      state.vertical += (targetVertical - state.vertical) * Math.min(1, dt * (state.speed < stallSpeed ? .9 : 1.3));
-      // A modest gust makes the light fabric airframe feel alive without taking control away.
-      state.vertical += Math.sin(state.time * 1.4) * .025;
-      state.altitude += state.vertical * dt;
-      if (state.speed < 26 && state.altitude < 70) { setCrash('OVERTREK', 'De tweedekker verloor lift. Houd boven de overtreksnelheid voldoende snelheid.'); return; }
-      if (state.altitude <= 0) {
-        const aligned = Math.min(Math.abs(state.heading), 360 - Math.abs(state.heading)) < 18;
-        const safe = aligned && state.speed >= 35 && state.speed <= 65 && state.pitch > -4 && state.pitch < 12 && state.vertical > -3.2;
-        if (safe) { state.onGround = true; state.altitude = 0; state.vertical = 0; state.speed *= .82; state.landing = true; controls.throttle.value = 0; $('message').textContent = 'LANDING GESLAAGD · MOOI GEDAAN, PILOOT'; }
-        else { setCrash('LANDING MISLUKT', 'Raak de baan recht aan, met beheerste snelheid en een zachte daalvlucht.'); return; }
-      }
-      state.altitude = Math.min(state.altitude, 4500);
-    }
-    updateReadouts();
-  }
-
-  function drawFrame(now) {
-    const dt = Math.min(.04, Math.max(0, (now - lastFrame) / 1000)); lastFrame = now;
-    simulate(dt); drawWorld(); requestAnimationFrame(drawFrame);
-  }
-
-  function syncControl(name) {
-    const input = controls[name], n = Number(input.value);
-    $(outputIds[name]).textContent = `${n > 0 && name !== 'throttle' ? '+' : ''}${n}%`;
-    const pct = name === 'throttle' ? n : (n + 100) / 2;
-    input.style.setProperty('--fill', `${pct}%`);
-  }
-  Object.entries(controls).forEach(([name, input]) => {
-    syncControl(name); input.addEventListener('input', () => syncControl(name));
-  });
-
-  function setControl(name, value) { controls[name].value = String(clamp(value, Number(controls[name].min), Number(controls[name].max))); syncControl(name); }
-  const held = new Set();
-  window.addEventListener('keydown', (event) => {
-    if (['INPUT', 'BUTTON'].includes(document.activeElement?.tagName)) return;
-    const key = event.key.toLowerCase();
-    if (['w','s','a','d','q','e',' ','arrowup','arrowdown','arrowleft','arrowright'].includes(key) || event.key === 'Shift' || event.key === 'Control') event.preventDefault();
-    if (event.repeat && ['v',' '].includes(key)) return;
-    held.add(key);
-    if (key === 'v') toggleView();
-    if (key === ' ') togglePause();
-    if (event.key === 'Shift') setControl('throttle', Number(controls.throttle.value) + 3);
-    if (event.key === 'Control') setControl('throttle', Number(controls.throttle.value) - 3);
-  });
-  window.addEventListener('keyup', (event) => held.delete(event.key.toLowerCase()));
-  window.addEventListener('blur', () => held.clear());
-  function applyKeys() {
-    for (const key of held) {
-      if (key === 'w' || key === 'arrowup') setControl('elevator', Number(controls.elevator.value) + 2.5);
-      if (key === 's' || key === 'arrowdown') setControl('elevator', Number(controls.elevator.value) - 2.5);
-      if (key === 'a' || key === 'arrowleft') setControl('aileron', Number(controls.aileron.value) - 3);
-      if (key === 'd' || key === 'arrowright') setControl('aileron', Number(controls.aileron.value) + 3);
-      if (key === 'q') setControl('rudder', Number(controls.rudder.value) - 4);
-      if (key === 'e') setControl('rudder', Number(controls.rudder.value) + 4);
+      ctx.save();ctx.translate(w*.5,h*.59);ctx.rotate(rad(clamp(s.bank,-45,45)*.55));
+      poly([[-w*.38,-h*.08],[-w*.27,-h*.13],[w*.36,-h*.13],[w*.4,-h*.08],[w*.34,-h*.045],[-w*.36,-h*.045]],'#ba633a');poly([[-w*.33,h*.02],[-w*.24,-h*.02],[w*.32,-h*.02],[w*.36,h*.02],[w*.29,h*.055],[-w*.31,h*.055]],'#d18a4d');
+      ctx.strokeStyle='#503c2a';ctx.lineWidth=3;[-w*.18,w*.19].forEach(x=>{ctx.beginPath();ctx.moveTo(x,-h*.08);ctx.lineTo(x*.75,h*.02);ctx.stroke();});poly([[-w*.38,-h*.02],[-w*.48,-h*.1],[-w*.45,h*.03],[-w*.39,h*.04]],'#9b5736');oval(w*.04,0,w*.24,h*.035,'#483a29');oval(w*.15,-h*.01,w*.075,h*.065,'#a95832');ctx.save();ctx.translate(w*.25,0);ctx.rotate(s.prop);ctx.fillStyle='#322c24';ctx.fillRect(-2,-h*.14,4,h*.28);ctx.restore();oval(-w*.2,h*.055,w*.028,h*.028,'#302d25');oval(w*.13,h*.052,w*.028,h*.028,'#302d25');ctx.restore();
     }
   }
-  const originalSimulate = simulate;
-  simulate = function (dt) { applyKeys(); originalSimulate(dt); };
-
-  function toggleView() {
-    state.view = state.view === 'cockpit' ? 'external' : 'cockpit';
-    $('viewButton').innerHTML = state.view === 'cockpit' ? '◉ <span>BUITENZICHT</span>' : '◉ <span>COCKPIT</span>';
-    $('viewTag').textContent = state.view === 'cockpit' ? 'COCKPIT · OPEN CABINE' : 'BUITENBEELD · LUCHTVAARTUIG';
+  function dial(id, value, max, red = false) { const c = $(id), g = c.getContext('2d'), r = 48; g.clearRect(0,0,c.width,c.height); g.save();g.translate(60,65);g.beginPath();g.arc(0,0,r,Math.PI*.78,Math.PI*2.22);g.strokeStyle='#66715f';g.lineWidth=5;g.stroke();for(let i=0;i<=10;i++){let a=Math.PI*(.78+1.44*i/10);g.beginPath();g.moveTo(Math.cos(a)*(r-5),Math.sin(a)*(r-5));g.lineTo(Math.cos(a)*(r-(i%2?1:10)),Math.sin(a)*(r-(i%2?1:10)));g.strokeStyle=red&&i>8?'#d8755b':'#d5d0b4';g.lineWidth=2;g.stroke();}let a=Math.PI*(.78+1.44*clamp(value/max,0,1));g.beginPath();g.moveTo(0,7);g.lineTo(Math.cos(a)*(r-13),Math.sin(a)*(r-13));g.strokeStyle='#d98c51';g.lineWidth=2;g.stroke();g.restore(); }
+  function attitude() { const c=$('attitude'),g=c.getContext('2d'),z=c.width;g.clearRect(0,0,z,z);g.save();g.beginPath();g.arc(z/2,z/2,z*.47,0,Math.PI*2);g.clip();g.translate(z/2,z/2);g.rotate(-rad(s.bank));g.translate(0,clamp(s.pitch,-25,25)*1.2);g.fillStyle='#668b99';g.fillRect(-z,-z,z*2,z);g.fillStyle='#927e59';g.fillRect(-z,0,z*2,z);g.strokeStyle='#f2ebd1';g.beginPath();g.moveTo(-z,0);g.lineTo(z,0);g.stroke();g.restore();g.strokeStyle='#d8d1b3';g.beginPath();g.arc(z/2,z/2,z*.47,0,Math.PI*2);g.stroke(); }
+  function update() {
+    const feet=Math.round(s.altitude*3.28084), climb=Math.round(s.vertical*196.85), sp=Math.round(s.speed);
+    $('speedValue').textContent=sp;$('altValue').textContent=feet.toLocaleString('nl-NL');$('hudSpeed').textContent=sp;$('hudAltitude').textContent=feet.toLocaleString('nl-NL');$('hudClimb').textContent=(climb>0?'+':'')+climb;
+    $('headingReadout').textContent=String(Math.round(s.heading)%360).padStart(3,'0')+'°';$('rpmValue').textContent=Math.round(700+Number(controls.throttle.value)*20).toLocaleString('nl-NL');$('rpmMeter').style.width=controls.throttle.value+'%';$('fuelValue').textContent=Math.round(s.fuel);$('fuelMeter').style.width=s.fuel+'%';
+    $('statusText').textContent=s.crashed?'VLUCHT BEËINDIGD':s.onGround?(s.landed?'LANDING · TAXI OP DE BAAN':s.speed>5?'TAXI · STARTBAAN':Number(controls.throttle.value)>0?'MOTOR DRAAIT · OP DE STARTBAAN':'MOTOR UIT · OP DE STARTBAAN'):'IN VLUCHT · VISUEEL WEER';$('statusDot').style.background=s.crashed?'#e46d54':s.onGround?'#e4a95c':'#c8d880';
+    dial('speedDial',s.speed,120,true);dial('altDial',feet,10000);attitude();
+    if(!s.crashed){$('message').textContent=s.onGround?(s.landed?'LANDING GESLAAGD · REM AF EN TAXI VEILIG UIT':'STARTBAAN · GEEF GAS EN TREK LICHT AAN DE STICK'):s.speed<35?'WAARSCHUWING · TE WEINIG SNELHEID — NEUS OMLAAG':s.altitude<35?'NADERING · LIJN OP DE BAAN UIT EN MAAK EEN ZACHTE LANDING':'IN VLUCHT · HOUD DE NEUS LICHT OMHOOG EN DE VLEUGELS WATERPAS';}
   }
-  function togglePause() {
-    if (state.crashed) return;
-    state.paused = !state.paused; $('pausedOverlay').hidden = !state.paused;
-    $('pauseButton').textContent = state.paused ? '▶' : 'Ⅱ';
-  }
-
-  async function enableAudio() {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return;
-    if (!audio) {
-      audio = new AudioContext(); engineOsc = audio.createOscillator(); engineGain = audio.createGain();
-      const filter = audio.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 520;
-      engineOsc.type = 'sawtooth'; engineOsc.frequency.value = 75; engineGain.gain.value = 0;
-      engineOsc.connect(filter).connect(engineGain).connect(audio.destination); engineOsc.start();
-    }
-    if (audio.state === 'suspended') await audio.resume();
-    $('soundButton').setAttribute('aria-pressed', 'true'); $('soundButton').innerHTML = '♫ <span>GELUID AAN</span>';
-  }
-  function playImpact() {
-    if (!audio || audio.state !== 'running') return;
-    const osc = audio.createOscillator(), gain = audio.createGain(); osc.type = 'triangle';
-    osc.frequency.setValueAtTime(110, audio.currentTime); osc.frequency.exponentialRampToValueAtTime(38, audio.currentTime + .45);
-    gain.gain.setValueAtTime(.35, audio.currentTime); gain.gain.exponentialRampToValueAtTime(.001, audio.currentTime + .5);
-    osc.connect(gain).connect(audio.destination); osc.start(); osc.stop(audio.currentTime + .5);
-  }
-  $('soundButton').addEventListener('click', async () => {
-    if (audio && audio.state === 'running') {
-      await audio.suspend(); $('soundButton').setAttribute('aria-pressed', 'false'); $('soundButton').innerHTML = '♫ <span>GELUID</span>';
-    } else await enableAudio();
-  });
-  document.addEventListener('pointerdown', () => { if ($('soundButton').getAttribute('aria-pressed') === 'true') enableAudio(); }, { once: true });
-  setInterval(() => {
-    if (audio && audio.state === 'running' && engineOsc) {
-      engineOsc.frequency.setTargetAtTime(65 + Number(controls.throttle.value) * 1.25, audio.currentTime, .12);
-      engineGain.gain.setTargetAtTime(state.crashed ? 0 : .012 + Number(controls.throttle.value) * .00035, audio.currentTime, .15);
-    }
-  }, 100);
-
-  $('viewButton').addEventListener('click', toggleView);
-  $('pauseButton').addEventListener('click', togglePause);
-  $('restartButton').addEventListener('click', reset);
-  $('resetButton').addEventListener('click', reset);
-  $('helpButton').addEventListener('click', () => {
-    const open = $('helpPopover').hidden; $('helpPopover').hidden = !open; $('helpButton').setAttribute('aria-expanded', String(open));
-  });
-  document.addEventListener('visibilitychange', () => { if (document.hidden && !state.paused && !state.crashed) togglePause(); });
-  requestAnimationFrame(drawFrame);
+  function crash(title,text){s.crashed=true;s.paused=true;$('crashTitle').textContent=title;$('crashText').textContent=text;$('crashOverlay').hidden=false;$('pausedOverlay').hidden=true;update();}
+  function reset(){Object.assign(s,{speed:0,altitude:0,heading:0,pitch:0,bank:0,vertical:0,travel:0,fuel:100,onGround:true,paused:false,crashed:false,landed:false,prop:0});Object.entries(controls).forEach(([k,v])=>{v.value='0';sync(k);});$('crashOverlay').hidden=true;$('pausedOverlay').hidden=true;$('pauseButton').textContent='Ⅱ';last=performance.now();update();}
+  function sync(k){const n=Number(controls[k].value),pct=k==='throttle'?n:(n+100)/2;$(out[k]).textContent=(n>0&&k!=='throttle'?'+':'')+n+'%';controls[k].style.setProperty('--fill',pct+'%');}
+  Object.keys(controls).forEach(k=>{sync(k);controls[k].addEventListener('input',()=>sync(k));});
+  function step(dt){if(s.paused||s.crashed)return;const throttle=Number(controls.throttle.value)/100,elev=Number(controls.elevator.value)/100,ail=Number(controls.aileron.value)/100,rud=Number(controls.rudder.value)/100;s.time+=dt;
+    s.speed=clamp(s.speed+(throttle*8.3-.00043*s.speed*s.speed-s.speed*.025)*dt,0,120);s.fuel=Math.max(0,s.fuel-throttle*.00125*dt);if(!s.fuel){controls.throttle.value=0;sync('throttle');}s.prop+=dt*(5+s.speed*.18);s.travel+=s.speed*dt;
+    s.bank+=(ail*48-s.bank)*Math.min(1,dt*1.9);s.heading=(s.heading+(Math.sin(rad(s.bank))*(s.speed/38)*24+rud*(s.onGround?9:5))*dt+360)%360;s.pitch+=(elev*17-s.pitch)*Math.min(1,dt*1.6);
+    if(s.onGround){s.altitude=0;s.vertical=0;
+      // A takeoff requires deliberate high power. Residual speed/pitch at touchdown can no longer relaunch the aircraft.
+      if(!s.landed&&throttle>=.72&&s.speed>43&&s.pitch>4){s.onGround=false;s.vertical=1.5;}
+      // A landed aircraft remains in ground-roll mode; only reset starts a new takeoff run.
+      if(s.landed){s.pitch+=(0-s.pitch)*Math.min(1,dt*2);s.speed=Math.max(0,s.speed-(.9+throttle*.3)*dt);}
+    }else{
+      const stall=34,lift=clamp((s.speed-stall)/24,0,1.15),target=(s.pitch-2.2)*.34*lift-(s.speed<stall?(stall-s.speed)*.65:0);s.vertical+=(target-s.vertical)*Math.min(1,dt*(s.speed<stall?.9:1.3));s.vertical+=Math.sin(s.time*1.4)*.025;s.altitude+=s.vertical*dt;
+      if(s.speed<26&&s.altitude<70){crash('OVERTREK','De tweedekker verloor lift. Houd boven de overtreksnelheid voldoende snelheid.');return;}
+      if(s.altitude<=0){
+        const heading=Math.abs(((s.heading+180)%360)-180),aligned=heading<22;
+        // Landing accepts a stable, aligned touchdown; clamp the ground contact to avoid one-frame bounce.
+        const safe=aligned&&s.speed>=30&&s.speed<=72&&s.pitch>-8&&s.pitch<16&&s.vertical>-5.5;
+        if(safe){s.onGround=true;s.altitude=0;s.vertical=0;s.speed=Math.min(s.speed,42);s.landed=true;s.pitch=clamp(s.pitch,0,3);controls.throttle.value=0;sync('throttle');controls.elevator.value=0;sync('elevator');}
+        else{crash('LANDING MISLUKT','Raak de baan recht aan, met beheerste snelheid en een zachte daalvlucht.');return;}
+      }s.altitude=Math.min(s.altitude,4500);
+    }update();}
+  let held=new Set();function keyDown(e){if(['INPUT','BUTTON'].includes(document.activeElement?.tagName))return;const k=e.key.toLowerCase();if(['w','s','a','d','q','e',' ','arrowup','arrowdown','arrowleft','arrowright'].includes(k)||e.key==='Shift'||e.key==='Control')e.preventDefault();if(e.repeat&&['v',' '].includes(k))return;held.add(k);if(k==='v')toggleView();if(k===' ')togglePause();if(e.key==='Shift')controls.throttle.value=clamp(+controls.throttle.value+3,0,100);if(e.key==='Control')controls.throttle.value=clamp(+controls.throttle.value-3,0,100);}
+  addEventListener('keydown',keyDown);addEventListener('keyup',e=>held.delete(e.key.toLowerCase()));addEventListener('blur',()=>held.clear());
+  function applyKeys(){for(const k of held){if(k==='w'||k==='arrowup')controls.elevator.value=clamp(+controls.elevator.value+2.5,-100,100);if(k==='s'||k==='arrowdown')controls.elevator.value=clamp(+controls.elevator.value-2.5,-100,100);if(k==='a'||k==='arrowleft')controls.aileron.value=clamp(+controls.aileron.value-3,-100,100);if(k==='d'||k==='arrowright')controls.aileron.value=clamp(+controls.aileron.value+3,-100,100);if(k==='q')controls.rudder.value=clamp(+controls.rudder.value-4,-100,100);if(k==='e')controls.rudder.value=clamp(+controls.rudder.value+4,-100,100);}Object.keys(controls).forEach(sync);}
+  function toggleView(){s.view=s.view==='cockpit'?'external':'cockpit';$('viewButton').innerHTML=s.view==='cockpit'?'◉ <span>BUITENZICHT</span>':'◉ <span>COCKPIT</span>';$('viewTag').textContent=s.view==='cockpit'?'COCKPIT · OPEN CABINE':'BUITENBEELD · LUCHTVAARTUIG';}
+  function togglePause(){if(s.crashed)return;s.paused=!s.paused;$('pausedOverlay').hidden=!s.paused;$('pauseButton').textContent=s.paused?'▶':'Ⅱ';}
+  async function enableSound(){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;if(!audio){audio=new AC();oscillator=audio.createOscillator();engineGain=audio.createGain();const filter=audio.createBiquadFilter();filter.type='lowpass';filter.frequency.value=520;oscillator.type='sawtooth';oscillator.frequency.value=75;engineGain.gain.value=0;oscillator.connect(filter).connect(engineGain).connect(audio.destination);oscillator.start();}if(audio.state==='suspended')await audio.resume();$('soundButton').setAttribute('aria-pressed','true');$('soundButton').innerHTML='♫ <span>GELUID AAN</span>';}
+  $('soundButton').addEventListener('click',async()=>{if(audio?.state==='running'){await audio.suspend();$('soundButton').setAttribute('aria-pressed','false');$('soundButton').innerHTML='♫ <span>GELUID</span>';}else await enableSound();});setInterval(()=>{if(audio?.state==='running'){oscillator.frequency.setTargetAtTime(65+Number(controls.throttle.value)*1.25,audio.currentTime,.12);engineGain.gain.setTargetAtTime(s.crashed?0:.012+Number(controls.throttle.value)*.00035,audio.currentTime,.15);}},100);
+  $('viewButton').addEventListener('click',toggleView);$('pauseButton').addEventListener('click',togglePause);$('restartButton').addEventListener('click',reset);$('resetButton').addEventListener('click',reset);$('helpButton').addEventListener('click',()=>{$('helpPopover').hidden=!$('helpPopover').hidden;$('helpButton').setAttribute('aria-expanded',String(!$('helpPopover').hidden));});document.addEventListener('visibilitychange',()=>{if(document.hidden&&!s.paused&&!s.crashed)togglePause();});
+  function frame(now){const dt=Math.min(.04,Math.max(0,(now-last)/1000));last=now;if(!s.paused&&!s.crashed){applyKeys();step(dt);}draw();requestAnimationFrame(frame);}update();requestAnimationFrame(frame);
 })();
