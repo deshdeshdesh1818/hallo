@@ -1,1 +1,4 @@
 #mountainLayer{display:none!important}
+.scenery-control{position:absolute;z-index:5;right:18px;top:82px;width:150px;padding:8px 10px;background:rgba(35,42,34,.78);border:1px solid rgba(235,230,197,.45);color:#eee8cf;font:9px Inter,sans-serif;letter-spacing:1px;display:grid;grid-template-columns:1fr auto;gap:6px;pointer-events:auto}
+.scenery-control input{grid-column:1/3;width:100%;accent-color:#c5d481}
+.scenery-control output{color:#dce69c}
