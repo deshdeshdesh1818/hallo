@@ -1,1 +1,1 @@
-De visualisatie is aangepast: bergen staan verder in de verte, het landschap kan worden verschoven met de nieuwe schuifregelaar, wolken bewegen en bomen verschijnen in natuurlijke bossen en lege stukken.
+De besturing is aangepast: de koersschuifregelaar is vervangen door een sleepbaar stuurwiel dat de koers en het landschap laat meebewegen. De bergen naderen op basis van de afgelegde afstand. Als je hoog genoeg over de bergkam vliegt, verandert het uitzicht in een rotsachtig hooglandlandschap.
