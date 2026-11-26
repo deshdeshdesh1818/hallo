@@ -88,12 +88,17 @@
   function sync(k){const n=Number(controls[k].value),pct=k==='throttle'?n:(n+100)/2;$(outputs[k]).textContent=(n>0&&k!=='throttle'?'+':'')+n+'%';controls[k].style.setProperty('--fill',pct+'%');}
   Object.keys(controls).forEach(k=>{sync(k);controls[k].addEventListener('input',()=>sync(k));});
   function crash(title,text){if(state.crashed)return;state.crashed=true;state.paused=true;$('crashTitle').textContent=title;$('crashText').textContent=text;$('crashOverlay').hidden=false;$('pausedOverlay').hidden=true;update();playImpact();}
-  function reset(){Object.assign(state,{speed:0,altitude:0,heading:0,pitch:0,bank:0,vertical:0,travel:0,fuel:100,onGround:true,landed:false,paused:false,crashed:false,prop:0,time:0});Object.entries(controls).forEach(([k,input])=>{input.value='0';sync(k);});$('crashOverlay').hidden=true;$('pausedOverlay').hidden=true;$('pauseButton').textContent='Ⅱ';last=performance.now();update();}
+  function reset(){
+    // Keep the remaining fuel after a crash; a manual reset during normal play gives a fresh tank.
+    const fuelAtRestart = state.crashed ? state.fuel : 100;
+    Object.assign(state,{speed:0,altitude:0,heading:0,pitch:0,bank:0,vertical:0,travel:0,fuel:fuelAtRestart,onGround:true,landed:false,paused:false,crashed:false,prop:0,time:0});
+    Object.entries(controls).forEach(([k,input])=>{input.value='0';sync(k);});
+    $('crashOverlay').hidden=true;$('pausedOverlay').hidden=true;$('pauseButton').textContent='Ⅱ';last=performance.now();update();
+  }
   function step(dt){
     if(state.paused||state.crashed)return;
     const throttle=Number(controls.throttle.value)/100,elevator=Number(controls.elevator.value)/100,aileron=Number(controls.aileron.value)/100,rudder=Number(controls.rudder.value)/100;
     state.time+=dt;
-    // Fuel burns whenever the engine is running: a small idle flow plus load-dependent consumption.
     const fuelUsedPerSecond=throttle>0?.045+throttle*.12:.008;
     state.fuel=Math.max(0,state.fuel-fuelUsedPerSecond*dt);
     if(state.fuel<=0){controls.throttle.value='0';sync('throttle');crash('BRANDSTOF OP','De motor is afgeslagen: de brandstof is op.');return;}
@@ -104,10 +109,8 @@
     state.pitch+=(elevator*17-state.pitch)*Math.min(1,dt*1.6);
     if(state.onGround){
       state.altitude=0;state.vertical=0;
-      // After touchdown, throttle always starts a new takeoff run. Do not lock the plane in landed mode.
       if(state.landed&&throttle>.08)state.landed=false;
       if(state.landed&&throttle<=.08){state.pitch+=(0-state.pitch)*Math.min(1,dt*2);state.speed=Math.max(0,state.speed-1.1*dt);}
-      // Lower takeoff gate and nose-up angle make a second takeoff attainable after landing.
       if(throttle>=.65&&state.speed>=39&&state.pitch>2.5){state.onGround=false;state.landed=false;state.vertical=1.2;}
     }else{
       const stall=34,lift=clamp((state.speed-stall)/24,0,1.15);
