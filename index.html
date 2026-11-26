@@ -6,22 +6,23 @@
   <meta name="theme-color" content="#18221e">
   <title>HAVIK — Tweedekker Flight Simulator</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="weather.css">
 </head>
 <body>
   <main class="simulator" aria-label="Havik tweedekker-vluchtsimulator">
     <header class="topbar">
       <a class="brand" href="#" aria-label="Havik simulator"><span class="brand-mark">H</span><span>HAVIK <small>FLIGHT SIMULATOR</small></span></a>
-      <div class="mission"><span>VLUCHT <b>001</b></span><span>VELD <b>EHAV · HAVIKVELD</b></span><span class="weather"><i></i> VFR · LICHTE WIND</span></div>
+      <div class="mission"><span>VLUCHT <b>001</b></span><span>VELD <b>EHAV · HAVIKVELD</b></span><span class="weather"><i></i> <b id="weatherSummary">VFR · LICHTE WIND</b></span></div>
       <div class="top-actions">
         <button id="viewButton" class="quiet-button" type="button" title="Wissel cockpit- en buitenaanzicht">◉ <span>BUITENZICHT</span></button>
         <button id="soundButton" class="quiet-button" type="button" title="Geluid aan of uit" aria-pressed="false">♫ <span>GELUID</span></button>
         <button id="pauseButton" class="pause-button" type="button" aria-label="Pauze">Ⅱ</button>
       </div>
     </header>
-
     <section class="view" id="view" aria-label="Vliegbeeld">
       <canvas id="scene" aria-label="Getekend vliegbeeld met landschap en tweedekker"></canvas>
-      <div class="sky-label"><span>WIND</span><b id="windReadout">270° · 6 kt</b><span class="weather-icon">☼</span></div>
+      <canvas id="weatherCanvas" aria-hidden="true"></canvas>
+      <div class="sky-label"><span>WEER</span><b id="windReadout">270° · 6 kt</b><span class="weather-icon" id="weatherIcon">☼</span></div>
       <div class="heading-tape" aria-label="Kompas"><span>N</span><span>30</span><span>60</span><b id="headingReadout">000°</b><span>30</span><span>60</span><span>N</span></div>
       <div class="flight-hud" aria-live="polite">
         <div class="hud-card"><span>IAS</span><strong id="hudSpeed">0</strong><small>KT</small></div>
@@ -33,7 +34,6 @@
       <div class="crash-overlay" id="crashOverlay" hidden><div class="crash-card"><span class="eyebrow">VLUCHT BEËINDIGD</span><h2 id="crashTitle">LANDING MISLUKT</h2><p id="crashText">Probeer het opnieuw.</p><button id="restartButton" type="button">↻ &nbsp; OPNIEUW VLIEGEN</button></div></div>
       <div class="view-tag" id="viewTag">COCKPIT · OPEN CABINE</div>
     </section>
-
     <section class="lower-panel" aria-label="Vluchtinstrumenten en bediening">
       <div class="instruments">
         <div class="instrument"><div class="instrument-title">SNELHEID</div><div class="dial"><canvas id="speedDial" width="120" height="120" aria-label="Snelheidsmeter"></canvas><strong><span id="speedValue">0</span><small>KT</small></strong></div></div>
@@ -42,7 +42,6 @@
         <div class="instrument compact-instrument"><div class="instrument-title">MOTORTOERENTAL</div><div class="readout"><strong id="rpmValue">700</strong><small>RPM</small></div><div class="meter"><i id="rpmMeter"></i></div></div>
         <div class="instrument compact-instrument"><div class="instrument-title">BRANDSTOF</div><div class="readout"><strong id="fuelValue">100</strong><small>%</small></div><div class="meter fuel-meter"><i id="fuelMeter"></i></div></div>
       </div>
-
       <div class="controls">
         <div class="control-heading"><div><span class="eyebrow">VLIEGBEDIENING</span><strong>JOUW BESTURING</strong></div><span class="control-hint">W/S · PITCH &nbsp; A/D · ROL &nbsp; Q/E · ROER</span></div>
         <label class="control-row" for="throttle"><span><b>GASKLEP</b><small>motorvermogen</small></span><input id="throttle" type="range" min="0" max="100" value="0"><output id="throttleOut">0%</output></label>
@@ -56,5 +55,6 @@
     <footer><span><i class="status-dot" id="statusDot"></i><b id="statusText">MOTOR UIT · OP DE STARTBAAN</b></span><span id="coordinates">52.30° N&nbsp; 4.76° E</span><span>SIMULATIE · GEEN ECHT VLIEGADVIES</span></footer>
   </main>
   <script src="script.js"></script>
+  <script src="weather.js"></script>
 </body>
 </html>
