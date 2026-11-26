@@ -50,9 +50,9 @@
     const feet=Math.round(s.altitude*3.28084), climb=Math.round(s.vertical*196.85), sp=Math.round(s.speed);
     $('speedValue').textContent=sp;$('altValue').textContent=feet.toLocaleString('nl-NL');$('hudSpeed').textContent=sp;$('hudAltitude').textContent=feet.toLocaleString('nl-NL');$('hudClimb').textContent=(climb>0?'+':'')+climb;
     $('headingReadout').textContent=String(Math.round(s.heading)%360).padStart(3,'0')+'°';$('rpmValue').textContent=Math.round(700+Number(controls.throttle.value)*20).toLocaleString('nl-NL');$('rpmMeter').style.width=controls.throttle.value+'%';$('fuelValue').textContent=Math.round(s.fuel);$('fuelMeter').style.width=s.fuel+'%';
-    $('statusText').textContent=s.crashed?'VLUCHT BEËINDIGD':s.onGround?(s.landed?'LANDING · TAXI OP DE BAAN':s.speed>5?'TAXI · STARTBAAN':Number(controls.throttle.value)>0?'MOTOR DRAAIT · OP DE STARTBAAN':'MOTOR UIT · OP DE STARTBAAN'):'IN VLUCHT · VISUEEL WEER';$('statusDot').style.background=s.crashed?'#e46d54':s.onGround?'#e4a95c':'#c8d880';
+    $('statusText').textContent=s.crashed?'VLUCHT BEËINDIGD':s.onGround?(s.landed?(sp>5?'LANDING · UITROLLEN':'LANDING · KLAAR OM OPNIEUW TE STARTEN'):sp>5?'TAXI · STARTBAAN':Number(controls.throttle.value)>0?'MOTOR DRAAIT · OP DE STARTBAAN':'MOTOR UIT · OP DE STARTBAAN'):'IN VLUCHT · VISUEEL WEER';$('statusDot').style.background=s.crashed?'#e46d54':s.onGround?'#e4a95c':'#c8d880';
     dial('speedDial',s.speed,120,true);dial('altDial',feet,10000);attitude();
-    if(!s.crashed){$('message').textContent=s.onGround?(s.landed?'LANDING GESLAAGD · REM AF EN TAXI VEILIG UIT':'STARTBAAN · GEEF GAS EN TREK LICHT AAN DE STICK'):s.speed<35?'WAARSCHUWING · TE WEINIG SNELHEID — NEUS OMLAAG':s.altitude<35?'NADERING · LIJN OP DE BAAN UIT EN MAAK EEN ZACHTE LANDING':'IN VLUCHT · HOUD DE NEUS LICHT OMHOOG EN DE VLEUGELS WATERPAS';}
+    if(!s.crashed){$('message').textContent=s.onGround?(s.landed?(sp>5?'UITROLLEN · REM AF, GEEF DAN WEER GAS':'LANDING GESLAAGD · GEEF GAS OM OPNIEUW OP TE STIJGEN'):'STARTBAAN · GEEF GAS EN TREK LICHT AAN DE STICK'):s.speed<35?'WAARSCHUWING · TE WEINIG SNELHEID — NEUS OMLAAG':s.altitude<35?'NADERING · LIJN OP DE BAAN UIT EN MAAK EEN ZACHTE LANDING':'IN VLUCHT · HOUD DE NEUS LICHT OMHOOG EN DE VLEUGELS WATERPAS';}
   }
   function crash(title,text){s.crashed=true;s.paused=true;$('crashTitle').textContent=title;$('crashText').textContent=text;$('crashOverlay').hidden=false;$('pausedOverlay').hidden=true;update();}
   function reset(){Object.assign(s,{speed:0,altitude:0,heading:0,pitch:0,bank:0,vertical:0,travel:0,fuel:100,onGround:true,paused:false,crashed:false,landed:false,prop:0});Object.entries(controls).forEach(([k,v])=>{v.value='0';sync(k);});$('crashOverlay').hidden=true;$('pausedOverlay').hidden=true;$('pauseButton').textContent='Ⅱ';last=performance.now();update();}
@@ -62,16 +62,17 @@
     s.speed=clamp(s.speed+(throttle*8.3-.00043*s.speed*s.speed-s.speed*.025)*dt,0,120);s.fuel=Math.max(0,s.fuel-throttle*.00125*dt);if(!s.fuel){controls.throttle.value=0;sync('throttle');}s.prop+=dt*(5+s.speed*.18);s.travel+=s.speed*dt;
     s.bank+=(ail*48-s.bank)*Math.min(1,dt*1.9);s.heading=(s.heading+(Math.sin(rad(s.bank))*(s.speed/38)*24+rud*(s.onGround?9:5))*dt+360)%360;s.pitch+=(elev*17-s.pitch)*Math.min(1,dt*1.6);
     if(s.onGround){s.altitude=0;s.vertical=0;
-      // A takeoff requires deliberate high power. Residual speed/pitch at touchdown can no longer relaunch the aircraft.
+      // Landed aircraft may roll to a stop, then accelerate again and take off normally.
+      if(s.landed){
+        if(throttle>.08&&s.speed>5){s.landed=false;}
+        else{s.pitch+=(0-s.pitch)*Math.min(1,dt*2);if(throttle<.02)s.speed=Math.max(0,s.speed-(1.1)*dt);}
+      }
       if(!s.landed&&throttle>=.72&&s.speed>43&&s.pitch>4){s.onGround=false;s.vertical=1.5;}
-      // A landed aircraft remains in ground-roll mode; only reset starts a new takeoff run.
-      if(s.landed){s.pitch+=(0-s.pitch)*Math.min(1,dt*2);s.speed=Math.max(0,s.speed-(.9+throttle*.3)*dt);}
     }else{
       const stall=34,lift=clamp((s.speed-stall)/24,0,1.15),target=(s.pitch-2.2)*.34*lift-(s.speed<stall?(stall-s.speed)*.65:0);s.vertical+=(target-s.vertical)*Math.min(1,dt*(s.speed<stall?.9:1.3));s.vertical+=Math.sin(s.time*1.4)*.025;s.altitude+=s.vertical*dt;
       if(s.speed<26&&s.altitude<70){crash('OVERTREK','De tweedekker verloor lift. Houd boven de overtreksnelheid voldoende snelheid.');return;}
       if(s.altitude<=0){
         const heading=Math.abs(((s.heading+180)%360)-180),aligned=heading<22;
-        // Landing accepts a stable, aligned touchdown; clamp the ground contact to avoid one-frame bounce.
         const safe=aligned&&s.speed>=30&&s.speed<=72&&s.pitch>-8&&s.pitch<16&&s.vertical>-5.5;
         if(safe){s.onGround=true;s.altitude=0;s.vertical=0;s.speed=Math.min(s.speed,42);s.landed=true;s.pitch=clamp(s.pitch,0,3);controls.throttle.value=0;sync('throttle');controls.elevator.value=0;sync('elevator');}
         else{crash('LANDING MISLUKT','Raak de baan recht aan, met beheerste snelheid en een zachte daalvlucht.');return;}
