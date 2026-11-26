@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="weather.css">
   <link rel="stylesheet" href="engine-enhancements.css">
+  <link rel="stylesheet" href="airport.css">
 </head>
 <body>
   <main class="simulator" aria-label="Havik tweedekker-vluchtsimulator">
@@ -48,7 +49,7 @@
         <label class="control-row" for="throttle"><span><b>GASKLEP</b><small>motorvermogen</small></span><input id="throttle" type="range" min="0" max="100" value="0"><output id="throttleOut">0%</output></label>
         <label class="control-row" for="elevator"><span><b>HOOGTEROER</b><small>neus omhoog / omlaag</small></span><input id="elevator" type="range" min="-100" max="100" value="0"><output id="elevatorOut">0%</output></label>
         <label class="control-row" for="aileron"><span><b>ROLROER</b><small>links / rechts rollen</small></span><input id="aileron" type="range" min="-100" max="100" value="0"><output id="aileronOut">0%</output></label>
-        <label class="control-row" for="rudder"><span><b>RICHTINGSROER</b><small>links / rechts</small></span><input id="rudder" type="range" min="-100" max="100" value="0"><output id="rudderOut">0%</output></label>
+        <label class="control-row" for="rudder"><span><b>RICHTINGSROER</b><small>links / rechts roer</small></span><input id="rudder" type="range" min="-100" max="100" value="0"><output id="rudderOut">0%</output></label>
         <div class="action-row"><button id="resetButton" class="secondary-button" type="button">↺ HERSTART</button><button id="helpButton" class="secondary-button" type="button" aria-expanded="false">⌨ BESTURING</button><span class="fuel-note">ROTARY ENGINE · 110 PK</span></div>
         <div class="help-popover" id="helpPopover" hidden><b>Besturing</b><span><kbd>W</kbd>/<kbd>S</kbd> hoogte · <kbd>A</kbd>/<kbd>D</kbd> rol · <kbd>Q</kbd>/<kbd>E</kbd> roer</span><span><kbd>Shift</kbd>/<kbd>Ctrl</kbd> gas · <kbd>V</kbd> camera · <kbd>Spatie</kbd> pauze</span><span>Je kunt ook de schuifregelaars of touchbediening gebruiken.</span></div>
       </div>
@@ -59,5 +60,6 @@
   <script src="weather.js"></script>
   <script src="engine-enhancements.js"></script>
   <script src="thermometer.js"></script>
+  <script src="airport.js"></script>
 </body>
 </html>
